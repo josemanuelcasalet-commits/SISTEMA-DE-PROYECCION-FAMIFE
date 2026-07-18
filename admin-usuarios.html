@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Administrar clientes — JM Proyección</title>
+<style>
+  :root{
+    --bg:#000000;
+    --bg-card:#000000;
+    --bg-card-hover:#161616;
+    --border:#2E2E2E;
+    --text:#E6E4DF;
+    --text-dim:#8A8880;
+    --accent:#2E5266;
+    --accent-dim:#3D6C85;
+    --gold:#B5714C;
+    --danger:#B5544C;
+    --ok:#4F6F52;
+    --radius:14px;
+    --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-display: 'Fraunces', Georgia, serif;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  body{
+    font-family: var(--font-ui);
+    background: var(--bg);
+    color: var(--text);
+    min-height:100vh;
+    position:relative;
+  }
+  .blob-bg{
+    position:fixed; inset:0; width:100%; height:100%;
+    z-index:0; pointer-events:none; filter: blur(6px);
+  }
+
+  /* ---------- LOGIN VIEW ---------- */
+  #loginView{
+    position:relative; z-index:1;
+    min-height:100vh; display:flex; align-items:center; justify-content:center;
+  }
+  .box{
+    width: 400px; max-width: 90vw;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 34px;
+    box-shadow: 0 24px 60px -20px rgba(0,0,0,0.7);
+  }
+  .eyebrow{
+    font-size: 11px; font-weight:700; letter-spacing: 0.1em;
+    text-transform:uppercase; color: var(--gold); text-align:center;
+  }
+  .logo{
+    font-family: var(--font-display); font-size: 24px; font-weight:600;
+    color: var(--text); text-align:center; margin-top: 4px; margin-bottom: 4px;
+  }
+  .subtitle{ text-align:center; color: var(--text-dim); font-size: 13px; margin-bottom: 22px; }
+  label{
+    display:block; font-size: 12.5px; font-weight:600; color: var(--text-dim);
+    margin-bottom: 6px; margin-top: 14px;
+  }
+  input, select{
+    width:100%; background: #0a0a0a; border: 1.5px solid var(--border);
+    border-radius: var(--radius); padding: 12px 14px; color: var(--text);
+    font-size: 14px; font-family: var(--font-ui);
+  }
+  input:focus, select:focus{ outline:none; border-color: var(--accent-dim); }
+  .btn{
+    border:none; border-radius: var(--radius); padding: 12px 18px;
+    font-size: 14px; font-weight:700; cursor:pointer;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .btn:active{ transform: scale(0.98); }
+  .btn-primary{ background: var(--accent); color:#fff; width:100%; margin-top:20px; }
+  .btn-primary:hover{ background: var(--accent-dim); }
+  .btn-secondary{ background: #111; color:var(--text); border:1px solid var(--border); }
+  .btn-secondary:hover{ background: var(--bg-card-hover); }
+  .btn-danger{ background: transparent; color: var(--danger); border:1px solid var(--danger); }
+  .btn-danger:hover{ background: rgba(181,84,76,0.12); }
+  .btn-ok{ background: transparent; color: var(--ok); border:1px solid var(--ok); }
+  .btn-ok:hover{ background: rgba(79,111,82,0.12); }
+  .msg{ margin-top: 14px; font-size: 13px; text-align:center; min-height: 18px; }
+  .msg.error{ color: var(--danger); }
+  .setup-note{
+    background: #101418; border: 1px solid var(--accent-dim);
+    border-radius: var(--radius); padding: 14px 16px;
+    font-size: 12.5px; color: #A9C2CE; line-height:1.55; margin-bottom: 6px;
+  }
+
+  /* ---------- PANEL VIEW ---------- */
+  #panelView{ display:none; position:relative; z-index:1; }
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 16px 28px;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(18px);
+    border-bottom: 1px solid var(--border);
+  }
+  .topbar-left{ display:flex; align-items:center; gap:12px; }
+  .main{ max-width: 900px; margin:0 auto; padding: 32px 28px 60px; }
+  .section-title{ font-family: var(--font-display); font-size: 22px; font-weight:600; margin-bottom: 4px; }
+  .section-sub{ color: var(--text-dim); font-size: 13.5px; margin-bottom: 22px; }
+
+  .panel-block{
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+  .panel-block h3{ font-family: var(--font-display); font-size: 17px; font-weight:600; margin-bottom: 4px; }
+  .panel-block .desc{ color: var(--text-dim); font-size: 13px; margin-bottom: 18px; }
+
+  .form-row{ display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .data-table{ width:100%; border-collapse: collapse; margin-top: 10px; }
+  .data-table th{
+    text-align:left; font-size: 11px; font-weight:700; letter-spacing:0.05em;
+    text-transform:uppercase; color: var(--text-dim);
+    padding: 0 12px 10px; border-bottom: 1px solid var(--border);
+  }
+  .data-table td{
+    padding: 12px; font-size: 13.5px; border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  .data-table tr:last-child td{ border-bottom:none; }
+  .pill{
+    display:inline-block; font-size: 11px; font-weight:600;
+    padding: 3px 10px; border-radius: 20px;
+  }
+  .pill-active{ background: rgba(79,111,82,0.15); color: var(--ok); border: 1px solid var(--ok); }
+  .pill-inactive{ background: rgba(181,84,76,0.15); color: var(--danger); border: 1px solid var(--danger); }
+  .empty-hint{ color: var(--text-dim); font-size: 13px; padding: 18px 4px; text-align:center; }
+</style>
+</head>
+<body>
+
+<svg class="blob-bg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+  <path fill="#2E5266" opacity="0.22" d="M-100,80 C140,-100 460,-40 560,160 C660,360 480,480 280,520 C80,560 -200,470 -220,280 C-235,150 -200,140 -100,80 Z"/>
+  <path fill="#B5714C" opacity="0.18" d="M1150,-100 C1400,-80 1580,80 1500,260 C1430,420 1180,440 1020,360 C860,280 870,90 960,-20 C1020,-95 1040,-105 1150,-100 Z"/>
+</svg>
+
+<!-- ========== LOGIN / SETUP ========== -->
+<div id="loginView">
+  <div class="box">
+    <div class="eyebrow">Administración</div>
+    <div class="logo">JM Proyección</div>
+
+    <div id="loginForm">
+      <div class="subtitle">Entra con tu cuenta de administrador</div>
+      <label for="adminEmail">Correo</label>
+      <input type="email" id="adminEmail" autocomplete="username">
+      <label for="adminPass">Contraseña</label>
+      <input type="password" id="adminPass" autocomplete="current-password">
+      <button class="btn btn-primary" id="adminLoginBtn">Entrar</button>
+      <div class="msg" id="adminLoginMsg"></div>
+    </div>
+
+    <div id="setupForm" style="display:none;">
+      <div class="setup-note">Todavía no existe ninguna cuenta de administrador. Crea la tuya ahora, la vas a usar para dar de alta a tus clientes.</div>
+      <label for="setupEmail">Tu correo</label>
+      <input type="email" id="setupEmail" autocomplete="username">
+      <label for="setupPass">Contraseña (mínimo 6 caracteres)</label>
+      <input type="password" id="setupPass" autocomplete="new-password">
+      <button class="btn btn-primary" id="setupBtn">Crear cuenta de administrador</button>
+      <div class="msg" id="setupMsg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== PANEL ========== -->
+<div id="panelView">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="logo" style="font-size:18px;">JM Proyección — Clientes</div>
+    </div>
+    <button class="btn btn-danger" id="logoutBtn">Cerrar sesión</button>
+  </div>
+
+  <div class="main">
+    <div class="section-title">Cuentas de clientes</div>
+    <div class="section-sub">Aquí creas el acceso para cada persona a la que le vendes el sistema, y puedes desactivarlo cuando quieras.</div>
+
+    <div class="panel-block">
+      <h3>Crear nuevo acceso</h3>
+      <div class="desc">Esto crea la cuenta real con la que tu cliente va a entrar a panel-control.html.</div>
+      <div class="form-row">
+        <div>
+          <label for="newUserName">Nombre o iglesia</label>
+          <input type="text" id="newUserName" placeholder="Ej: Iglesia Vida Nueva">
+        </div>
+        <div>
+          <label for="newUserEmail">Correo del cliente</label>
+          <input type="email" id="newUserEmail" placeholder="cliente@correo.com">
+        </div>
+      </div>
+      <label for="newUserPass">Contraseña que le vas a dar</label>
+      <input type="text" id="newUserPass" placeholder="Mínimo 6 caracteres">
+      <button class="btn btn-primary" id="createUserBtn">Crear acceso</button>
+      <div class="msg" id="createUserMsg"></div>
+    </div>
+
+    <div class="panel-block">
+      <h3>Clientes existentes</h3>
+      <div class="desc">Activa o desactiva el acceso de cualquier cliente en cualquier momento.</div>
+      <div id="usersTableWrap"></div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword,
+  signOut, onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+  getFirestore, doc, getDoc, setDoc, updateDoc, collection, getDocs, query, where, limit
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDmU6ksN9xGtNr6-tQZ8XWmOBjmiSFVxfg",
+  authDomain: "proyeccion-d4548.firebaseapp.com",
+  projectId: "proyeccion-d4548",
+  storageBucket: "proyeccion-d4548.firebasestorage.app",
+  messagingSenderId: "1017233790137",
+  appId: "1:1017233790137:web:8620235958b46799937768"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const loginView = document.getElementById('loginView');
+const panelView = document.getElementById('panelView');
+const loginForm = document.getElementById('loginForm');
+const setupForm = document.getElementById('setupForm');
+
+/* =========================================================
+   DETECTAR SI YA EXISTE UN ADMINISTRADOR
+   ========================================================= */
+async function existeAdmin(){
+  const q = query(collection(db, 'usuarios'), where('isAdmin', '==', true), limit(1));
+  const snap = await getDocs(q);
+  return !snap.empty;
+}
+
+(async ()=>{
+  const hayAdmin = await existeAdmin();
+  loginForm.style.display = hayAdmin ? 'block' : 'none';
+  setupForm.style.display = hayAdmin ? 'none' : 'block';
+})();
+
+/* =========================================================
+   SESIÓN: mostrar panel si ya hay admin autenticado
+   ========================================================= */
+onAuthStateChanged(auth, async (user)=>{
+  if(!user){
+    loginView.style.display = 'flex';
+    panelView.style.display = 'none';
+    return;
+  }
+  const snap = await getDoc(doc(db, 'usuarios', user.uid));
+  if(snap.exists() && snap.data().isAdmin === true){
+    loginView.style.display = 'none';
+    panelView.style.display = 'block';
+    cargarUsuarios();
+  } else {
+    // sesión de un cliente normal, no de administrador: la cerramos aquí
+    await signOut(auth);
+  }
+});
+
+/* =========================================================
+   LOGIN DE ADMINISTRADOR
+   ========================================================= */
+document.getElementById('adminLoginBtn').addEventListener('click', async ()=>{
+  const email = document.getElementById('adminEmail').value.trim();
+  const pass = document.getElementById('adminPass').value;
+  const msg = document.getElementById('adminLoginMsg');
+  msg.textContent = '';
+  if(!email || !pass){ msg.textContent = 'Completa correo y contraseña.'; msg.className='msg error'; return; }
+  try{
+    await signInWithEmailAndPassword(auth, email, pass);
+  } catch(e){
+    msg.textContent = 'Correo o contraseña incorrectos.';
+    msg.className = 'msg error';
+  }
+});
+
+/* =========================================================
+   CREAR PRIMERA CUENTA DE ADMINISTRADOR
+   ========================================================= */
+document.getElementById('setupBtn').addEventListener('click', async ()=>{
+  const email = document.getElementById('setupEmail').value.trim();
+  const pass = document.getElementById('setupPass').value;
+  const msg = document.getElementById('setupMsg');
+  msg.textContent = '';
+
+  if(!email || pass.length < 6){
+    msg.textContent = 'Escribe un correo válido y una contraseña de al menos 6 caracteres.';
+    msg.className = 'msg error';
+    return;
+  }
+  try{
+    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+    await setDoc(doc(db, 'usuarios', cred.user.uid), {
+      email, name: 'Administrador', isAdmin: true, active: true, createdAt: Date.now()
+    });
+  } catch(e){
+    msg.textContent = 'No se pudo crear la cuenta: ' + (e.message || 'intenta de nuevo.');
+    msg.className = 'msg error';
+  }
+});
+
+/* =========================================================
+   CERRAR SESIÓN
+   ========================================================= */
+document.getElementById('logoutBtn').addEventListener('click', async ()=>{
+  await signOut(auth);
+});
+
+/* =========================================================
+   CREAR CLIENTE NUEVO
+   Usamos una instancia secundaria de Firebase para crear la
+   cuenta, así no se reemplaza la sesión del administrador
+   (crear un usuario con la app principal iniciaría sesión
+   automáticamente como ese usuario nuevo).
+   ========================================================= */
+document.getElementById('createUserBtn').addEventListener('click', async ()=>{
+  const name = document.getElementById('newUserName').value.trim();
+  const email = document.getElementById('newUserEmail').value.trim();
+  const pass = document.getElementById('newUserPass').value;
+  const msg = document.getElementById('createUserMsg');
+  msg.textContent = '';
+
+  if(!name || !email || pass.length < 6){
+    msg.textContent = 'Completa nombre, correo, y una contraseña de al menos 6 caracteres.';
+    msg.className = 'msg error';
+    return;
+  }
+
+  const secondaryApp = initializeApp(firebaseConfig, 'secundaria-' + Date.now());
+  const secondaryAuth = getAuth(secondaryApp);
+
+  try{
+    const cred = await createUserWithEmailAndPassword(secondaryAuth, email, pass);
+    await setDoc(doc(db, 'usuarios', cred.user.uid), {
+      email, name, isAdmin: false, active: true, createdAt: Date.now()
+    });
+    await signOut(secondaryAuth);
+    await deleteApp(secondaryApp);
+
+    document.getElementById('newUserName').value = '';
+    document.getElementById('newUserEmail').value = '';
+    document.getElementById('newUserPass').value = '';
+    msg.textContent = 'Cuenta creada. Ya puedes darle el correo y la contraseña a tu cliente.';
+    msg.className = 'msg';
+    cargarUsuarios();
+  } catch(e){
+    let texto = 'No se pudo crear la cuenta.';
+    if(e.code === 'auth/email-already-in-use') texto = 'Ese correo ya tiene una cuenta creada.';
+    msg.textContent = texto;
+    msg.className = 'msg error';
+    await deleteApp(secondaryApp);
+  }
+});
+
+/* =========================================================
+   LISTAR Y ACTIVAR/DESACTIVAR CLIENTES
+   ========================================================= */
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+async function cargarUsuarios(){
+  const wrap = document.getElementById('usersTableWrap');
+  const q = query(collection(db, 'usuarios'), where('isAdmin', '==', false));
+  const snap = await getDocs(q);
+
+  if(snap.empty){
+    wrap.innerHTML = '<div class="empty-hint">Todavía no has creado ningún cliente.</div>';
+    return;
+  }
+
+  let rows = '';
+  snap.forEach(docSnap=>{
+    const u = docSnap.data();
+    const id = docSnap.id;
+    rows += `
+      <tr>
+        <td>${escapeHtml(u.name || '')}</td>
+        <td>${escapeHtml(u.email || '')}</td>
+        <td>${u.active ? '<span class="pill pill-active">Activo</span>' : '<span class="pill pill-inactive">Desactivado</span>'}</td>
+        <td>
+          ${u.active
+            ? `<button class="btn btn-danger" data-id="${id}" data-action="disable" style="padding:6px 12px; font-size:12px;">Desactivar</button>`
+            : `<button class="btn btn-ok" data-id="${id}" data-action="enable" style="padding:6px 12px; font-size:12px;">Activar</button>`
+          }
+        </td>
+      </tr>`;
+  });
+
+  wrap.innerHTML = `
+    <table class="data-table">
+      <thead><tr><th>Nombre</th><th>Correo</th><th>Estado</th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+
+  wrap.querySelectorAll('button[data-action]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const id = btn.dataset.id;
+      const activar = btn.dataset.action === 'enable';
+      await updateDoc(doc(db, 'usuarios', id), { active: activar });
+      cargarUsuarios();
+    });
+  });
+}
+</script>
+
+</body>
+</html>

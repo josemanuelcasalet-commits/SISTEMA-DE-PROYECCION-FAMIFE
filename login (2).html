@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acceso — JM Proyección</title>
+<style>
+  :root{
+    --bg:#000000;
+    --bg-card:#000000;
+    --border:#2E2E2E;
+    --text:#E6E4DF;
+    --text-dim:#8A8880;
+    --accent:#2E5266;
+    --accent-dim:#3D6C85;
+    --gold:#B5714C;
+    --danger:#B5544C;
+    --radius:16px;
+    --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-display: 'Fraunces', Georgia, serif;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  body{
+    font-family: var(--font-ui);
+    background: var(--bg);
+    color: var(--text);
+    height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+    overflow:hidden;
+  }
+  .blob-bg{
+    position:fixed; inset:0; width:100%; height:100%;
+    z-index:0; pointer-events:none; filter: blur(6px);
+  }
+  .box{
+    position:relative; z-index:1;
+    width: 400px; max-width: 90vw;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow:hidden;
+    box-shadow: 0 24px 60px -20px rgba(0,0,0,0.7);
+  }
+  .box-body{ padding: 34px; }
+  .eyebrow{
+    font-size: 11px; font-weight:700; letter-spacing: 0.1em;
+    text-transform:uppercase; color: var(--gold); text-align:center;
+  }
+  .logo{
+    font-family: var(--font-display); font-size: 24px; font-weight:600;
+    color: var(--text); text-align:center; margin-top: 4px; margin-bottom: 4px;
+  }
+  .subtitle{ text-align:center; color: var(--text-dim); font-size: 13px; margin-bottom: 26px; }
+  label{
+    display:block; font-size: 12.5px; font-weight:600; color: var(--text-dim);
+    margin-bottom: 6px; margin-top: 16px; letter-spacing:0.02em;
+  }
+  input{
+    width:100%; background: #0a0a0a; border: 1.5px solid var(--border);
+    border-radius: var(--radius); padding: 12px 14px; color: var(--text);
+    font-size: 15px; font-family: var(--font-ui);
+    transition: border-color 0.15s, background 0.15s;
+  }
+  input:focus{ outline:none; border-color: var(--accent-dim); background:#101010; }
+  .btn{
+    width:100%; margin-top: 22px; background: var(--accent); color:#fff;
+    border:none; border-radius: var(--radius); padding: 14px;
+    font-size: 15px; font-weight:700; cursor:pointer;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .btn:hover{ background: var(--accent-dim); }
+  .btn:active{ transform: scale(0.98); }
+  .btn:disabled{ opacity:0.5; cursor:not-allowed; }
+  .msg{ margin-top: 14px; font-size: 13px; text-align:center; min-height: 18px; }
+  .msg.error{ color: var(--danger); }
+  .msg.info{ color: var(--text-dim); }
+</style>
+</head>
+<body>
+
+<svg class="blob-bg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+  <path fill="#2E5266" opacity="0.35" d="M-80,120 C120,-40 380,10 460,180 C540,350 380,430 220,480 C60,530 -160,470 -180,300 C-195,190 -160,180 -80,120 Z"/>
+  <path fill="#B5714C" opacity="0.3" d="M1180,-60 C1380,-40 1520,80 1470,230 C1420,380 1220,400 1080,340 C940,280 950,120 1020,30 C1070,-35 1080,-65 1180,-60 Z"/>
+  <path fill="#4F6F52" opacity="0.35" d="M1250,620 C1440,600 1560,740 1500,860 C1450,960 1260,980 1120,920 C1000,870 1010,760 1080,690 C1140,630 1170,628 1250,620 Z"/>
+</svg>
+
+<div class="box">
+  <div class="box-body">
+    <div class="eyebrow">Acceso privado</div>
+    <div class="logo">JM Proyección</div>
+    <div class="subtitle">Ingresa con el correo y la contraseña que te dieron</div>
+
+    <label for="loginEmail">Correo</label>
+    <input type="email" id="loginEmail" autocomplete="username" placeholder="tucorreo@ejemplo.com">
+    <label for="loginPass">Contraseña</label>
+    <input type="password" id="loginPass" autocomplete="current-password" placeholder="••••••••">
+    <button class="btn" id="loginBtn">Entrar</button>
+    <div class="msg" id="loginMsg"></div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+  getFirestore, doc, getDoc
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDmU6ksN9xGtNr6-tQZ8XWmOBjmiSFVxfg",
+  authDomain: "proyeccion-d4548.firebaseapp.com",
+  projectId: "proyeccion-d4548",
+  storageBucket: "proyeccion-d4548.firebasestorage.app",
+  messagingSenderId: "1017233790137",
+  appId: "1:1017233790137:web:8620235958b46799937768"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const loginBtn = document.getElementById('loginBtn');
+const loginMsg = document.getElementById('loginMsg');
+
+// Si ya hay una sesión activa y válida, entra directo sin pedir de nuevo.
+onAuthStateChanged(auth, async (user)=>{
+  if(user){
+    const valido = await verificarAcceso(user);
+    if(valido){
+      window.location.href = 'panel-control.html';
+    }
+  }
+});
+
+async function verificarAcceso(user){
+  try{
+    const snap = await getDoc(doc(db, 'usuarios', user.uid));
+    if(!snap.exists()){
+      return false;
+    }
+    const data = snap.data();
+    return data.active === true;
+  } catch(e){
+    return false;
+  }
+}
+
+async function doLogin(){
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  loginMsg.textContent = '';
+  loginMsg.className = 'msg';
+
+  if(!email || !pass){
+    loginMsg.textContent = 'Escribe tu correo y tu contraseña.';
+    loginMsg.className = 'msg error';
+    return;
+  }
+
+  loginBtn.disabled = true;
+  loginBtn.textContent = 'Entrando...';
+
+  try{
+    const cred = await signInWithEmailAndPassword(auth, email, pass);
+    const valido = await verificarAcceso(cred.user);
+    if(!valido){
+      await signOut(auth);
+      loginMsg.textContent = 'Tu acceso no está activo. Contacta a quien te vendió el acceso.';
+      loginMsg.className = 'msg error';
+      loginBtn.disabled = false;
+      loginBtn.textContent = 'Entrar';
+      return;
+    }
+    window.location.href = 'panel-control.html';
+  } catch(e){
+    let texto = 'No se pudo iniciar sesión. Revisa tu correo y contraseña.';
+    if(e.code === 'auth/too-many-requests'){
+      texto = 'Demasiados intentos. Espera unos minutos e intenta de nuevo.';
+    }
+    loginMsg.textContent = texto;
+    loginMsg.className = 'msg error';
+    loginBtn.disabled = false;
+    loginBtn.textContent = 'Entrar';
+  }
+}
+
+loginBtn.addEventListener('click', doLogin);
+document.getElementById('loginPass').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+document.getElementById('loginEmail').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+</script>
+
+</body>
+</html>
